@@ -25,7 +25,7 @@ export function TopBar({ alarmCount = 0 }: { alarmCount?: number }) {
         </div>
         <div>
           <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            Industrial Control System
+            Pepsico Brasil
           </div>
           <div className="font-semibold text-foreground leading-tight">
             Planta Matriz — São Paulo · Turno B
