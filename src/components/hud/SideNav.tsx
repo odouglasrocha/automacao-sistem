@@ -12,8 +12,12 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+  Building2,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthProvider";
+import { Button } from "@/components/ui/button";
 
 type NavItem = { icon: LucideIcon; label: string; to: string };
 
@@ -29,11 +33,13 @@ export const NAV_ITEMS: NavItem[] = [
   { icon: Bot, label: "IA · Insights", to: "/ia" },
   { icon: BarChart3, label: "Relatórios", to: "/relatorios" },
   { icon: ShieldCheck, label: "Qualidade", to: "/qualidade" },
+  { icon: Building2, label: "Administração", to: "/admin" },
   { icon: Settings, label: "Configurações", to: "/configuracoes" },
 ];
 
 export function SideNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { user, signOut } = useAuth();
 
   return (
     <aside className="hidden lg:flex w-56 flex-col shrink-0 border-r border-border bg-sidebar/60 backdrop-blur-sm">
@@ -62,8 +68,16 @@ export function SideNav() {
           );
         })}
       </nav>
-      <div className="p-3 border-t border-border text-[10px] mono text-muted-foreground">
-        v0.1 · MVP · build 2026.07.28
+      <div className="p-3 border-t border-border space-y-2">
+        {user && (
+          <div className="text-[10px] mono text-muted-foreground truncate" title={user.email ?? ""}>
+            {user.email}
+          </div>
+        )}
+        <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => void signOut()}>
+          <LogOut className="h-4 w-4 mr-2" /> Sair
+        </Button>
+        <div className="text-[10px] mono text-muted-foreground">v0.2 · Supabase online</div>
       </div>
     </aside>
   );

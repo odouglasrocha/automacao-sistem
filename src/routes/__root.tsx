@@ -4,15 +4,19 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SideNav } from "@/components/hud/SideNav";
 import { TopBar } from "@/components/hud/TopBar";
+import { AuthProvider, useAuth } from "@/context/AuthProvider";
 
 function NotFoundComponent() {
   return (
@@ -99,7 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,
@@ -127,16 +131,43 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen flex flex-col">
-        <TopBar />
-        <div className="flex flex-1 min-h-0">
-          <SideNav />
-          <main className="flex-1 min-w-0 overflow-x-hidden">
-            {/* Required: nested routes render here. */}
-            <Outlet />
-          </main>
-        </div>
-      </div>
+      <AuthProvider>
+        <AuthGate>
+          <div className="min-h-screen flex flex-col">
+            <TopBar />
+            <div className="flex flex-1 min-h-0">
+              <SideNav />
+              <main className="flex-1 min-w-0 overflow-x-hidden">
+                <Outlet />
+              </main>
+            </div>
+          </div>
+        </AuthGate>
+        <Toaster richColors position="top-right" />
+      </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function AuthGate({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const nav = useNavigate();
+  const isAuthRoute = pathname === "/auth";
+
+  useEffect(() => {
+    if (!loading && !user && !isAuthRoute) {
+      nav({ to: "/auth", replace: true });
+    }
+  }, [loading, user, isAuthRoute, nav]);
+
+  if (isAuthRoute) return <Outlet />;
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground text-sm">
+        Carregando sessão…
+      </div>
+    );
+  }
+  return <>{children}</>;
 }
