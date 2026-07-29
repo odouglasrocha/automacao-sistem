@@ -60,7 +60,7 @@ function Dashboard() {
     <div className="p-4 md:p-6 space-y-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Visão Geral · Chão de Fábrica
+              Visão Geral · Chão de Fábrica - EMPACOTAMENTO TORCIDA
             </h1>
             <p className="text-sm text-muted-foreground">
               Monitoramento consolidado de {kpis.total} ativos em 4 linhas produtivas ·
