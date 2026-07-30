@@ -12,6 +12,35 @@ export interface EaMaquina {
   fabricante_maquina: string | null;
   ano_fabricacao: number | null;
   ativo: boolean;
+  /** true quando a linha vem do fallback local (tabelas ainda não criadas no banco). */
+  virtual?: boolean;
+}
+
+/** Frota EA34–EA58 (exceto EA43) usada enquanto o schema não existe no banco. */
+export const EA_FLEET_FALLBACK: EaMaquina[] = Array.from(
+  { length: 58 - 34 + 1 },
+  (_, i) => 34 + i,
+)
+  .filter((n) => n !== 43)
+  .map((n) => ({
+    id: `virtual-EA${n}`,
+    nome: `EA${n}`,
+    linha: "L-04 Envase",
+    descricao: `Máquina de envase EA${n}`,
+    localizacao: null,
+    fabricante_maquina: null,
+    ano_fabricacao: null,
+    ativo: true,
+    virtual: true,
+  }));
+
+export function isSchemaMissing(e: any) {
+  const msg = String(e?.message ?? e ?? "");
+  return (
+    e?.code === "42P01" ||
+    e?.code === "PGRST205" ||
+    /does not exist|schema cache|relation .* does not exist/i.test(msg)
+  );
 }
 
 /** Frota EA — cada máquina é uma linha própria em ea_maquinas. */
@@ -20,11 +49,45 @@ export function useEaMaquinas() {
     queryKey: ["ea_maquinas", "list"],
     queryFn: async () => {
       const { data, error } = await supabase.from("ea_maquinas").select("*").order("nome");
-      if (error) throw error;
+      if (error) {
+        // Sem schema no banco: opera com a frota local para não travar a UI.
+        if (isSchemaMissing(error)) return EA_FLEET_FALLBACK;
+        throw error;
+      }
+      if (!data?.length) return EA_FLEET_FALLBACK;
       return ((data ?? []) as EaMaquina[]).sort(
         (a, b) => Number(a.nome.replace(/\D/g, "")) - Number(b.nome.replace(/\D/g, "")),
       );
     },
+    retry: false,
+  });
+}
+
+/**
+ * Atualiza a própria máquina (ea_maquinas). A PK é `id` — nunca `maquina_id`,
+ * por isso esta mutação NÃO usa upsert com onConflict=maquina_id.
+ */
+export function useEaMaquinaSave(maquinaId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Record<string, any>) => {
+      if (!maquinaId) throw new Error("Selecione uma máquina");
+      if (maquinaId.startsWith("virtual-")) throw new Error(SCHEMA_MSG);
+      const { id: _ignored, maquina_id: _ignored2, ...campos } = payload;
+      const { data, error } = await supabase
+        .from("ea_maquinas")
+        .update({ ...campos, updated_at: new Date().toISOString() })
+        .eq("id", maquinaId)
+        .select()
+        .maybeSingle();
+      if (error) throw new Error(errorMsg(error));
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ea_maquinas"] });
+      toast.success("Máquina atualizada");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
   });
 }
 
@@ -50,11 +113,16 @@ export function useEaSingletonSave(table: string, maquinaId: string | null) {
   return useMutation({
     mutationFn: async (payload: Record<string, any>) => {
       if (!maquinaId) throw new Error("Selecione uma máquina");
+      if (maquinaId.startsWith("virtual-")) throw new Error(SCHEMA_MSG);
+      const { id: _ignored, ...campos } = payload;
       const { data, error } = await supabase
         .from(table)
-        .upsert({ ...payload, maquina_id: maquinaId, updated_at: new Date().toISOString() }, { onConflict: "maquina_id" })
+        .upsert(
+          { ...campos, maquina_id: maquinaId, updated_at: new Date().toISOString() },
+          { onConflict: "maquina_id" },
+        )
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw new Error(errorMsg(error));
       return data;
     },
@@ -66,14 +134,15 @@ export function useEaSingletonSave(table: string, maquinaId: string | null) {
   });
 }
 
+const SCHEMA_MSG =
+  "Tabela ainda não criada — rode docs/sql/0003_ea_clp.sql no SQL Editor do Supabase.";
+
 function errorMsg(e: any) {
   const msg = String(e?.message ?? e ?? "");
   if (e?.code === "42501" || /row-level security/i.test(msg)) {
     return "Sem permissão. Faça login e rode docs/sql/0003_ea_clp.sql no Supabase.";
   }
-  if (/does not exist|schema cache/i.test(msg)) {
-    return "Tabela ainda não criada — rode docs/sql/0003_ea_clp.sql no SQL Editor do Supabase.";
-  }
+  if (isSchemaMissing(e)) return SCHEMA_MSG;
   return msg || "Erro ao salvar";
 }
 
@@ -120,8 +189,12 @@ export function useEaLogs(maquinaId: string | null) {
         .eq("maquina_id", maquinaId)
         .order("ts", { ascending: false })
         .limit(200);
-      if (error) throw error;
+      if (error) {
+        if (isSchemaMissing(error)) return [];
+        throw error;
+      }
       return data ?? [];
     },
+    retry: false,
   });
 }

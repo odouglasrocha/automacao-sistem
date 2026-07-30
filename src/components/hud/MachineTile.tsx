@@ -1,16 +1,49 @@
-import { Thermometer, Zap, Gauge } from "lucide-react";
+import { Thermometer, Zap, Gauge, Settings2, Radio, FlaskConical } from "lucide-react";
 import { STATUS_META, type Machine } from "@/lib/simulation";
 
-export function MachineTile({ m }: { m: Machine }) {
+export function MachineTile({
+  m,
+  onConfigure,
+  modo = "simulacao",
+}: {
+  m: Machine;
+  onConfigure?: (nome: string) => void;
+  modo?: "producao" | "simulacao";
+}) {
   const meta = STATUS_META[m.status];
   const progress = Math.min(100, (m.producedHour / m.target) * 100);
+  const real = modo === "producao";
 
   return (
-    <div className={`hud-panel p-3 border ${meta.bg} relative overflow-hidden`}>
+    <div className={`hud-panel p-3 border ${meta.bg} relative overflow-hidden group`}>
+      {onConfigure && (
+        <button
+          type="button"
+          onClick={() => onConfigure(m.name)}
+          title={`Configuração exclusiva de ${m.name}`}
+          aria-label={`Abrir configuração exclusiva de ${m.name}`}
+          className="absolute bottom-2 right-2 z-10 rounded-md border border-border bg-background/70 p-1.5 text-muted-foreground opacity-0 transition hover:text-primary hover:border-primary/60 group-hover:opacity-100 focus:opacity-100"
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+        </button>
+      )}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-[10px] mono text-muted-foreground truncate">{m.id} · {m.line}</div>
-          <div className="font-semibold text-foreground truncate">{m.name}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-foreground truncate">{m.name}</span>
+            <span
+              title={real ? "Modo de operação: Produção (dados do CLP)" : "Modo de operação: Simulação"}
+              className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[9px] uppercase tracking-widest mono ${
+                real
+                  ? "border-success/40 bg-success/15 text-success"
+                  : "border-border bg-muted/30 text-muted-foreground"
+              }`}
+            >
+              {real ? <Radio className="h-2.5 w-2.5" /> : <FlaskConical className="h-2.5 w-2.5" />}
+              {real ? "Produção" : "Simulação"}
+            </span>
+          </div>
         </div>
         <span
           className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm border ${meta.bg} ${meta.color} whitespace-nowrap`}

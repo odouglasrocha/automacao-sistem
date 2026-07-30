@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { KpiCard } from "@/components/hud/KpiCard";
 import { MachineTile } from "@/components/hud/MachineTile";
+import { useMachineConfig } from "@/components/hud/ea/useMachineConfig";
+import { useEaRuntime, applyRuntime } from "@/hooks/useEaRuntime";
 import { ProductionChart } from "@/components/hud/ProductionChart";
 import { AndonPanel } from "@/components/hud/AndonPanel";
 import { AlarmList } from "@/components/hud/AlarmList";
@@ -40,7 +42,10 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const { machines, alarms, andon, history } = useIndustrialSimulation();
+  const { machines: simuladas, alarms, andon, history } = useIndustrialSimulation();
+  const runtime = useEaRuntime();
+  const machines = useMemo(() => applyRuntime(simuladas, runtime), [simuladas, runtime]);
+  const { abrir, dialog, conhece } = useMachineConfig();
 
   const kpis = useMemo(() => {
     const producing = machines.filter((m) => m.status === "producing").length;
@@ -53,7 +58,8 @@ function Dashboard() {
     const target = machines.reduce((s, m) => s + m.target, 0);
     const energy =
       machines.reduce((s, m) => s + m.current * 0.38, 0);
-    return { producing, total, oee, avail, perf, qual, producedHour, target, energy };
+    const emProducao = machines.filter((m) => m.modo === "producao").length;
+    return { producing, total, oee, avail, perf, qual, producedHour, target, energy, emProducao };
   }, [machines]);
 
   return (
@@ -151,16 +157,17 @@ function Dashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {machines.map((m) => (
-                  <MachineTile key={m.id} m={m} />
+                  <MachineTile key={m.id} m={m} modo={m.modo} onConfigure={conhece(m.name) ? abrir : undefined} />
                 ))}
               </div>
+              {dialog}
             </div>
             <AlarmList alarms={alarms} />
           </section>
 
           <footer className="text-[11px] mono text-muted-foreground text-center py-4 border-t border-border">
-            ICS · MVP navegável · dados simulados a partir de gateway virtual OPC-UA/MQTT.
-            Próximos módulos: MES · SCADA · Manutenção · IIoT · IA.
+            ICS · {kpis.emProducao} de {kpis.total} ativos em modo Produção (leitura do CLP via
+            EtherNet/IP); os demais operam com gateway virtual OPC-UA/MQTT em simulação.
           </footer>
     </div>
   );

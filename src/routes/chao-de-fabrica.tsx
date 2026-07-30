@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Factory } from "lucide-react";
 import { ModulePage } from "@/components/hud/ModulePage";
 import { MachineTile } from "@/components/hud/MachineTile";
+import { useMachineConfig } from "@/components/hud/ea/useMachineConfig";
+import { useEaRuntime, applyRuntime } from "@/hooks/useEaRuntime";
 import { useIndustrialSimulation, STATUS_META, type MachineStatus } from "@/lib/simulation";
 
 export const Route = createFileRoute("/chao-de-fabrica")({
@@ -15,7 +17,11 @@ export const Route = createFileRoute("/chao-de-fabrica")({
 });
 
 function ChaoDeFabrica() {
-  const { machines } = useIndustrialSimulation();
+  const { machines: simuladas } = useIndustrialSimulation();
+  const runtime = useEaRuntime();
+  const machines = applyRuntime(simuladas, runtime);
+  const { abrir, dialog, conhece } = useMachineConfig();
+  const emProducao = machines.filter((m) => m.modo === "producao").length;
 
   const counts = machines.reduce<Record<MachineStatus, number>>((acc, m) => {
     acc[m.status] = (acc[m.status] ?? 0) + 1;
@@ -29,7 +35,7 @@ function ChaoDeFabrica() {
       icon={Factory}
       eyebrow="Operações"
       title="Chão de Fábrica"
-      description="Mapa em tempo real de todas as máquinas, linhas e ativos monitorados via OPC-UA e MQTT."
+      description={`Mapa em tempo real de todas as máquinas, linhas e ativos. ${emProducao} de ${machines.length} em modo Produção (dados do CLP); as demais em Simulação.`}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {statuses.map((s) => {
@@ -49,9 +55,10 @@ function ChaoDeFabrica() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {machines.map((m) => (
-          <MachineTile key={m.id} m={m} />
+          <MachineTile key={m.id} m={m} modo={m.modo} onConfigure={conhece(m.name) ? abrir : undefined} />
         ))}
       </div>
+      {dialog}
     </ModulePage>
   );
 }

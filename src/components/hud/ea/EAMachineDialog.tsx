@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CrudTable } from "@/components/hud/CrudTable";
 import { ModeloCombobox } from "@/components/hud/ea/ModeloCombobox";
 import {
-  useEaLogs, useEaSingleton, useEaSingletonSave, type EaMaquina,
+  useEaLogs, useEaMaquinaSave, useEaSingleton, useEaSingletonSave, type EaMaquina,
 } from "@/hooks/useEaMachine";
 import { DATA_TYPES, PORTA_PADRAO, PROTOCOLOS, type ProtocoloIndustrial } from "@/lib/allenBradleyCatalog";
 import { getDriver, type DiagnosticoResultado, type DriverSnapshot } from "@/lib/AllenBradleyDriver";
@@ -57,6 +57,12 @@ export function EAMachineDialog({
 function MachineTabs({ maquina }: { maquina: EaMaquina }) {
   return (
     <Tabs defaultValue="info" className="mt-2">
+      {maquina.virtual && (
+        <div className="mb-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+          Banco ainda não configurado — rode <code>docs/sql/0003_ea_clp.sql</code> no SQL Editor do
+          Supabase para persistir a configuração exclusiva desta máquina.
+        </div>
+      )}
       <TabsList className="flex flex-wrap h-auto">
         <TabsTrigger value="info"><Info className="h-3.5 w-3.5 mr-1" />Informações</TabsTrigger>
         <TabsTrigger value="comm"><Network className="h-3.5 w-3.5 mr-1" />Comunicação</TabsTrigger>
@@ -151,7 +157,7 @@ function MachineTabs({ maquina }: { maquina: EaMaquina }) {
 // ---------------------------------------------------------------- Informações
 function InfoTab({ maquina }: { maquina: EaMaquina }) {
   const { data: status } = useEaSingleton<any>("ea_clp_status", maquina.id);
-  const save = useEaSingletonSave("ea_maquinas", maquina.id);
+  const save = useEaMaquinaSave(maquina.id);
   const [form, setForm] = useState(maquina);
   useEffect(() => setForm(maquina), [maquina]);
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -162,7 +168,6 @@ function InfoTab({ maquina }: { maquina: EaMaquina }) {
       onSubmit={(e) => {
         e.preventDefault();
         save.mutate({
-          id: maquina.id,
           nome: form.nome,
           linha: form.linha,
           descricao: form.descricao,
