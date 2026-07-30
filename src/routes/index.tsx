@@ -60,7 +60,7 @@ function Dashboard() {
     <div className="p-4 md:p-6 space-y-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Visão Geral · Chão de Fábrica - EMPACOTAMENTO TORCIDA
+              Visão Geral · Chão de Fábrica
             </h1>
             <p className="text-sm text-muted-foreground">
               Monitoramento consolidado de {kpis.total} ativos em 4 linhas produtivas ·
@@ -70,7 +70,7 @@ function Dashboard() {
 
           <section className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
             <KpiCard
-              label="Eficiência Geral"
+              label="OEE Geral"
               value={kpis.oee.toFixed(1)}
               unit="%"
               icon={Gauge}

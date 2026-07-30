@@ -15,11 +15,25 @@ function friendlyError(e: any, action: "salvar" | "remover"): string {
   return msg || `Erro ao ${action}`;
 }
 
-export function useList<T = any>(table: string, opts?: { orderBy?: string; ascending?: boolean; search?: string; searchColumn?: string }) {
+export function useList<T = any>(
+  table: string,
+  opts?: {
+    orderBy?: string;
+    ascending?: boolean;
+    search?: string;
+    searchColumn?: string;
+    filter?: Record<string, any>;
+    enabled?: boolean;
+  },
+) {
   return useQuery<T[]>({
     queryKey: [table, "list", opts],
+    enabled: opts?.enabled ?? true,
     queryFn: async () => {
       let q = supabase.from(table).select("*");
+      for (const [k, v] of Object.entries(opts?.filter ?? {})) {
+        if (v !== undefined && v !== null) q = q.eq(k, v);
+      }
       if (opts?.search && opts?.searchColumn) q = q.ilike(opts.searchColumn, `%${opts.search}%`);
       if (opts?.orderBy) q = q.order(opts.orderBy, { ascending: opts.ascending ?? true });
       const { data, error } = await q;

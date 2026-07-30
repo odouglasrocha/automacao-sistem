@@ -9,6 +9,8 @@ import { useList, useRemove, useUpsert } from "@/hooks/useCrud";
 
 export type Field =
   | { name: string; label: string; type: "text" | "number" | "textarea"; required?: boolean }
+  | { name: string; label: string; type: "boolean"; required?: boolean }
+  | { name: string; label: string; type: "options"; required?: boolean; options: string[] }
   | { name: string; label: string; type: "select"; required?: boolean; optionsFrom: { table: string; label: string; value?: string } };
 
 function OptionsSelect({
@@ -48,6 +50,8 @@ export function CrudTable({
   fields,
   searchColumn = "nome",
   orderBy = "nome",
+  filter,
+  defaults,
 }: {
   table: string;
   title: string;
@@ -55,11 +59,15 @@ export function CrudTable({
   fields: Field[];
   searchColumn?: string;
   orderBy?: string;
+  /** Escopo do CRUD (ex.: { maquina_id }) — aplicado na leitura e na escrita. */
+  filter?: Record<string, any>;
+  /** Valores fixos injetados em cada novo registro. */
+  defaults?: Record<string, any>;
 }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Record<string, any> | null>(null);
-  const { data, isLoading, error } = useList<any>(table, { orderBy, search, searchColumn });
+  const { data, isLoading, error } = useList<any>(table, { orderBy, search, searchColumn, filter });
   const upsert = useUpsert(table);
   const remove = useRemove(table);
 
@@ -163,9 +171,15 @@ export function CrudTable({
             onSubmit={async (e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget as HTMLFormElement);
-              const payload: Record<string, any> = editing?.id ? { id: editing.id } : {};
+              const payload: Record<string, any> = editing?.id
+                ? { id: editing.id }
+                : { ...(filter ?? {}), ...(defaults ?? {}) };
               for (const f of fields) {
                 const v = fd.get(f.name);
+                if (f.type === "boolean") {
+                  payload[f.name] = v === "on" || v === "true";
+                  continue;
+                }
                 if (v === null || v === "") {
                   if (f.required) return;
                   payload[f.name] = null;
@@ -188,6 +202,25 @@ export function CrudTable({
                     defaultValue={editing?.[f.name] ?? ""}
                     className="w-full min-h-20 rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
+                ) : f.type === "boolean" ? (
+                  <div className="pt-1">
+                    <input
+                      type="checkbox"
+                      name={f.name}
+                      defaultChecked={editing?.[f.name] ?? false}
+                      className="accent-primary h-4 w-4"
+                    />
+                  </div>
+                ) : f.type === "options" ? (
+                  <select
+                    name={f.name}
+                    defaultValue={editing?.[f.name] ?? f.options[0]}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    {f.options.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
                 ) : f.type === "select" ? (
                   <OptionsSelect
                     table={f.optionsFrom.table}

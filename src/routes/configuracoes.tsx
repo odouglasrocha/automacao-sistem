@@ -21,6 +21,8 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CrudTable } from "@/components/hud/CrudTable";
+import { EAMachineDialog } from "@/components/hud/ea/EAMachineDialog";
+import { useEaMaquinas, type EaMaquina } from "@/hooks/useEaMachine";
 
 export const Route = createFileRoute("/configuracoes")({
   head: () => ({
@@ -381,6 +383,8 @@ function SecuritySection() {
 function EAConfigSection() {
   const { machines } = useIndustrialSimulation();
   const { user } = useAuth();
+  const { data: eaMaquinas } = useEaMaquinas();
+  const [clpMaquina, setClpMaquina] = useState<EaMaquina | null>(null);
   const eas = useMemo(
     () =>
       Array.from(new Set(machines.map((m) => m.name)))
@@ -388,6 +392,17 @@ function EAConfigSection() {
         .sort((a, b) => Number(a.slice(2)) - Number(b.slice(2))),
     [machines],
   );
+
+  function openClp(nome: string) {
+    const m = (eaMaquinas ?? []).find((x) => x.nome === nome);
+    if (!m) {
+      toast.error(
+        "Máquina ainda não cadastrada no banco — rode docs/sql/0003_ea_clp.sql no SQL Editor do Supabase.",
+      );
+      return;
+    }
+    setClpMaquina(m);
+  }
 
   const [configs, setConfigs] = useState<Record<string, EAConfig>>({});
   const [selected, setSelected] = useState<string | null>(null);
@@ -506,6 +521,11 @@ function EAConfigSection() {
 
   return (
     <section className="hud-panel p-4 space-y-4">
+      <EAMachineDialog
+        maquina={clpMaquina}
+        open={!!clpMaquina}
+        onOpenChange={(v) => !v && setClpMaquina(null)}
+      />
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Cpu className="h-4 w-4 text-primary" />
@@ -532,7 +552,10 @@ function EAConfigSection() {
               return (
                 <li key={ea}>
                   <button
-                    onClick={() => setSelected(ea)}
+                    onClick={() => {
+                      setSelected(ea);
+                      openClp(ea);
+                    }}
                     className={`w-full flex items-center justify-between px-3 py-2 text-left text-sm mono transition-colors ${
                       active
                         ? "bg-primary/15 text-primary"
