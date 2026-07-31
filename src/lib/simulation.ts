@@ -112,6 +112,7 @@ const ALARM_MSGS = [
   { s: "info" as const, m: "Troca de lote realizada" },
   { s: "info" as const, m: "Manutenção preventiva concluída" },
   { s: "warning" as const, m: "Baixo nível de matéria-prima" },
+  { s: "critical" as const, m: "Temperatura baixa mordente horizontal" },
 ];
 
 export function useIndustrialSimulation() {
