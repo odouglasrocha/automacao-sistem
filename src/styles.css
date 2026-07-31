@@ -197,3 +197,14 @@
   box-shadow: 0 0 12px var(--color-success);
   animation: hud-pulse 1.6s ease-in-out infinite;
 }
+
+/* Escala fluida para grandes painéis / TVs (Full HD, 2K, 4K) */
+@media (min-width: 1920px) {
+  html { font-size: 17.5px; }
+}
+@media (min-width: 2560px) {
+  html { font-size: 20px; }
+}
+@media (min-width: 3400px) {
+  html { font-size: 24px; }
+}

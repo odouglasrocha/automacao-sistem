@@ -17,6 +17,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
+import { useUi } from "@/context/UiProvider";
+import { useOperador } from "@/context/OperadorProvider";
 import { Button } from "@/components/ui/button";
 
 type NavItem = { icon: LucideIcon; label: string; to: string };
@@ -40,9 +42,13 @@ export const NAV_ITEMS: NavItem[] = [
 export function SideNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, signOut } = useAuth();
+  const { sidebarOpen } = useUi();
+  const { operador } = useOperador();
+
+  if (!sidebarOpen) return null;
 
   return (
-    <aside className="hidden lg:flex w-56 flex-col shrink-0 border-r border-border bg-sidebar/60 backdrop-blur-sm">
+    <aside className="hidden lg:flex w-56 2xl:w-64 flex-col shrink-0 border-r border-border bg-sidebar/60 backdrop-blur-sm">
       <div className="p-4 border-b border-border">
         <div className="text-[10px] mono uppercase tracking-[0.24em] text-muted-foreground">
           Módulos ICS
@@ -69,6 +75,11 @@ export function SideNav() {
         })}
       </nav>
       <div className="p-3 border-t border-border space-y-2">
+        {operador && (
+          <div className="text-[10px] mono text-muted-foreground truncate" title={operador.nome}>
+            OP {operador.matricula} · {operador.nome}
+          </div>
+        )}
         {user && (
           <div className="text-[10px] mono text-muted-foreground truncate" title={user.email ?? ""}>
             {user.email}
@@ -77,7 +88,7 @@ export function SideNav() {
         <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => void signOut()}>
           <LogOut className="h-4 w-4 mr-2" /> Sair
         </Button>
-        <div className="text-[10px] mono text-muted-foreground">v0.2 · Supabase online</div>
+        <div className="text-[10px] mono text-muted-foreground">v0.2 · F2 oculta o menu</div>
       </div>
     </aside>
   );

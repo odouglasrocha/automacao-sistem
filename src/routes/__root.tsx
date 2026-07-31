@@ -17,6 +17,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SideNav } from "@/components/hud/SideNav";
 import { TopBar } from "@/components/hud/TopBar";
 import { AuthProvider, useAuth } from "@/context/AuthProvider";
+import { UiProvider } from "@/context/UiProvider";
+import { OperadorProvider } from "@/context/OperadorProvider";
 
 function NotFoundComponent() {
   return (
@@ -132,17 +134,23 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AuthGate>
-          <div className="min-h-screen flex flex-col">
-            <TopBar />
-            <div className="flex flex-1 min-h-0">
-              <SideNav />
-              <main className="flex-1 min-w-0 overflow-x-hidden">
-                <Outlet />
-              </main>
-            </div>
-          </div>
-        </AuthGate>
+        <OperadorProvider>
+          <UiProvider>
+            <AuthGate>
+              <div className="min-h-screen flex flex-col">
+                <TopBar />
+                <div className="flex flex-1 min-h-0">
+                  <SideNav />
+                  <main className="flex-1 min-w-0 overflow-x-hidden">
+                    <div className="mx-auto w-full max-w-[2400px]">
+                      <Outlet />
+                    </div>
+                  </main>
+                </div>
+              </div>
+            </AuthGate>
+          </UiProvider>
+        </OperadorProvider>
         <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>
