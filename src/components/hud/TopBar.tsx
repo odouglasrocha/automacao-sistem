@@ -41,10 +41,10 @@ export function TopBar({ alarmCount = 0 }: { alarmCount?: number }) {
         </div>
         <div className="min-w-0">
           <div className="truncate text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            Pepsico do Brasil
+            Industrial Control System
           </div>
           <div className="truncate font-semibold text-foreground leading-tight">
-            Planta Itaquera — São Paulo · {turno.label}
+            Planta Matriz — São Paulo · {turno.label}
             <span className="ml-2 hidden xl:inline text-xs mono text-muted-foreground">
               {turno.inicio}–{turno.fim}
             </span>

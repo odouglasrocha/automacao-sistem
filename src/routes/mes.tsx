@@ -2,6 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ClipboardList, Play, Pause, CheckCircle2 } from "lucide-react";
 import { ModulePage, ComingSoon } from "@/components/hud/ModulePage";
 import { KpiCard } from "@/components/hud/KpiCard";
+import { useState } from "react";
+import { PlanoDialog } from "@/components/hud/PlanoDialog";
+
+const PLANEJAMENTO = "Inserir planejamento de produção";
 
 export const Route = createFileRoute("/mes")({
   head: () => ({
@@ -29,6 +33,7 @@ const STATUS: Record<string, { label: string; cls: string; icon: typeof Play }> 
 };
 
 function MES() {
+  const [planoAberto, setPlanoAberto] = useState(false);
   return (
     <ModulePage
       icon={ClipboardList}
@@ -94,11 +99,16 @@ function MES() {
           "Sequenciamento inteligente (PCP)",
           "Apontamento por operador",
           "Rastreabilidade por lote/serial",
-          "Consumo de matéria-prima",
+          PLANEJAMENTO,
           "Integração ERP/SAP",
           "Calendário industrial de turnos",
         ]}
+        onSelect={(item) => {
+          if (item === PLANEJAMENTO) setPlanoAberto(true);
+        }}
       />
+
+      <PlanoDialog open={planoAberto} onOpenChange={setPlanoAberto} />
     </ModulePage>
   );
 }

@@ -33,22 +33,39 @@ export function ModulePage({ icon: Icon, eyebrow, title, description, children, 
   );
 }
 
-export function ComingSoon({ items }: { items: string[] }) {
+export function ComingSoon({
+  items,
+  onSelect,
+}: {
+  items: string[];
+  onSelect?: (item: string) => void;
+}) {
   return (
     <div className="hud-panel p-6">
       <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
         Backlog do módulo · próximas entregas
       </div>
       <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        {items.map((it) => (
-          <li
-            key={it}
-            className="flex items-center gap-2 text-sm text-foreground/90 px-3 py-2 rounded-md border border-border bg-background/30"
-          >
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-            {it}
-          </li>
-        ))}
+        {items.map((it) => {
+          const clicavel = !!onSelect;
+          return (
+            <li key={it}>
+              <button
+                type="button"
+                disabled={!clicavel}
+                onClick={() => onSelect?.(it)}
+                className={`w-full text-left flex items-center gap-2 text-sm text-foreground/90 px-3 py-2 rounded-md border border-border bg-background/30 ${
+                  clicavel
+                    ? "hover:border-primary/60 hover:bg-primary/10 cursor-pointer transition-colors"
+                    : "cursor-default"
+                }`}
+              >
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+                {it}
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

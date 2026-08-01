@@ -22,7 +22,7 @@ import { useIndustrialSimulation } from "@/lib/simulation";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "PepSico · Painel Industrial em Tempo Real" },
+      { title: "ICS · Painel Industrial em Tempo Real" },
       {
         name: "description",
         content:
