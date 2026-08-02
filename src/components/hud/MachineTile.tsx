@@ -5,10 +5,13 @@ export function MachineTile({
   m,
   onConfigure,
   modo = "simulacao",
+  sku,
 }: {
   m: Machine;
   onConfigure?: (nome: string) => void;
   modo?: "producao" | "simulacao";
+  /** SKU alocado a esta EA no plano do dia. */
+  sku?: { cod: string; material: string } | null;
 }) {
   const meta = STATUS_META[m.status];
   const progress = Math.min(100, (m.producedHour / m.target) * 100);
@@ -98,6 +101,15 @@ export function MachineTile({
       <div className="h-1 mt-1 rounded-full bg-background/60 overflow-hidden">
         <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
       </div>
+
+      {sku && (
+        <div
+          className="mt-2 text-[10px] mono truncate text-muted-foreground"
+          title={`SKU alocado: ${sku.cod}-${sku.material}`}
+        >
+          SKU <span className="text-primary">{sku.cod}</span> · {sku.material}
+        </div>
+      )}
     </div>
   );
 }

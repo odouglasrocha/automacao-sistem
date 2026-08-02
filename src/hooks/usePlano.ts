@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { isSchemaMissing } from "@/hooks/useEaMachine";
+import { materialsData } from "@/data/materials";
+import { getCurrentDateInSaoPauloISO } from "@/data/ShelfLif";
 
 export interface PlanoRow {
   id: string;
@@ -24,6 +26,40 @@ export interface PlanoImportRow {
 
 export const PLANO_SQL_HINT =
   "Tabela `plano` ainda não criada — rode docs/sql/0005_plano.sql no SQL Editor do Supabase.";
+
+/** Caixas por unidade de embalagem, indexado pelo código do material. */
+const CAIXAS_POR_COD = new Map<string, number>(
+  materialsData.map((m) => [String(m.Codigo), m.Caixas]),
+);
+const CAIXAS_POR_NOME = new Map<string, number>(
+  materialsData.map((m) => [m.Material.trim().toUpperCase(), m.Caixas]),
+);
+
+/** Caixas de referência (data/materials.ts) para um item do plano. */
+export function caixasDoMaterial(cod: string, material?: string | null): number {
+  return (
+    CAIXAS_POR_COD.get(String(cod ?? "").trim()) ??
+    CAIXAS_POR_NOME.get(String(material ?? "").trim().toUpperCase()) ??
+    0
+  );
+}
+
+/** UND planejadas = plano_caixas_fardos × Caixas (referência materials.ts). */
+export function undDoPlano(row: Pick<PlanoRow, "cod_material_producao" | "material_producao" | "plano_caixas_fardos">): number {
+  return (row.plano_caixas_fardos || 0) * caixasDoMaterial(row.cod_material_producao, row.material_producao);
+}
+
+/** Itens do plano com data igual ao dia de hoje. */
+export function usePlanoHoje() {
+  const q = usePlanos();
+  const hoje = getCurrentDateInSaoPauloISO();
+  return {
+    ...q,
+    hoje,
+    rows: (q.data?.rows ?? []).filter((r) => r.data_plano === hoje),
+    schemaMissing: q.data?.schemaMissing ?? false,
+  };
+}
 
 export function usePlanos() {
   return useQuery<{ rows: PlanoRow[]; schemaMissing: boolean }>({

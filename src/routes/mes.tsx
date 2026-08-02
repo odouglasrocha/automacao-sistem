@@ -2,8 +2,29 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ClipboardList, Play, Pause, CheckCircle2 } from "lucide-react";
 import { ModulePage, ComingSoon } from "@/components/hud/ModulePage";
 import { KpiCard } from "@/components/hud/KpiCard";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PlanoDialog } from "@/components/hud/PlanoDialog";
+import { usePlanoHoje, undDoPlano, PLANO_SQL_HINT } from "@/hooks/usePlano";
+import { getShelfLifeExpirationDate } from "@/data/ShelfLif";
+import { CodigoJuliano } from "@/data/CodigoJuliano";
+import { useIndustrialSimulation } from "@/lib/simulation";
+import { useEaRuntime, applyRuntime } from "@/hooks/useEaRuntime";
+import { useProducaoPorSku } from "@/hooks/useAlocacaoSku";
+
+/** Código juliano (LSxxx) do dia informado (ISO yyyy-mm-dd). */
+function julianoDoDia(iso: string): string {
+  const [, mes, dia] = iso.split("-").map(Number);
+  const linha = CodigoJuliano.find((l) => l.Dia === dia) as
+    | Record<string, string | number>
+    | undefined;
+  return (linha?.[`Col${mes}`] as string) ?? "—";
+}
+
+/** Marca/linha do material (primeira palavra do descritivo). */
+function linhaDoMaterial(material: string, fallback?: string | null): string {
+  const marca = String(material ?? "").trim().split(/\s+/)[0];
+  return marca || fallback || "—";
+}
 
 const PLANEJAMENTO = "Inserir planejamento de produção";
 
@@ -34,6 +55,43 @@ const STATUS: Record<string, { label: string; cls: string; icon: typeof Play }> 
 
 function MES() {
   const [planoAberto, setPlanoAberto] = useState(false);
+  const { rows: planoHoje, isLoading: carregandoPlano, schemaMissing, hoje } = usePlanoHoje();
+  const validadeSemana = getShelfLifeExpirationDate(hoje);
+  const juliano = julianoDoDia(hoje);
+
+  // Produção real do chão de fábrica (Descargas/h das EAs alocadas ao SKU).
+  const { machines: simuladas } = useIndustrialSimulation();
+  const runtime = useEaRuntime();
+  const machines = applyRuntime(simuladas, runtime);
+  const { porSku } = useProducaoPorSku(machines);
+
+  // Ordens derivadas do planejamento do dia (plano × Caixas = UND planejadas).
+  const ordensPlano = useMemo(
+    () =>
+      planoHoje.map((p) => {
+        const prod = porSku.get(p.cod_material_producao);
+        const qty = Math.round(undDoPlano(p));
+        const done = Math.min(qty, prod?.und ?? 0);
+        const status = done >= qty && qty > 0 ? "done" : (prod?.maquinas.length ?? 0) > 0 ? "producing" : "queued";
+        return {
+          id: `${new Date(`${validadeSemana}T00:00:00`).toLocaleDateString("pt-BR")} · ${juliano}`,
+          sku: `${p.cod_material_producao}-${p.material_producao}`,
+          material: p.material_producao,
+          qty,
+          done,
+          status,
+          line: linhaDoMaterial(p.material_producao, p.linha),
+          start: prod && prod.maquinas.length > 0 ? `${prod.maquinas.length} EA · ${prod.descargasHora} desc/h` : "—",
+        };
+      }),
+    [planoHoje, validadeSemana, juliano, porSku],
+  );
+  const usandoPlano = ordensPlano.length > 0;
+  const lista = usandoPlano
+    ? ordensPlano
+    : ORDERS.map((o) => ({ ...o, material: o.sku, line: o.line }));
+  const undTotal = ordensPlano.reduce((s, o) => s + o.qty, 0);
+
   return (
     <ModulePage
       icon={ClipboardList}
@@ -42,11 +100,46 @@ function MES() {
       description="Planejamento, sequenciamento, apontamento por operador/máquina e rastreabilidade por lote."
     >
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard label="OPs Abertas" value="18" icon={ClipboardList} tone="primary" sub="turno atual" />
-        <KpiCard label="Em execução" value="7" icon={Play} tone="success" sub="linhas ativas" />
+        <KpiCard
+          label="OPs Abertas"
+          value={usandoPlano ? String(ordensPlano.length) : "18"}
+          icon={ClipboardList}
+          tone="primary"
+          sub={usandoPlano ? "plano de hoje" : "turno atual"}
+        />
+        <KpiCard
+          label="UND planejadas"
+          value={usandoPlano ? undTotal.toLocaleString("pt-BR") : "—"}
+          icon={Play}
+          tone="success"
+          sub="cx/fardos × caixas"
+        />
         <KpiCard label="Concluídas hoje" value="12" icon={CheckCircle2} tone="info" delta={8.3} sub="vs. ontem" />
         <KpiCard label="Atrasadas" value="2" icon={Pause} tone="danger" sub="prioridade alta" />
       </section>
+
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+          {usandoPlano
+            ? `Planejamento de hoje · ${new Date().toLocaleDateString("pt-BR")}`
+            : carregandoPlano
+              ? "Carregando planejamento…"
+              : "Sem planejamento para hoje · exibindo ordens de exemplo"}
+        </div>
+        <button
+          type="button"
+          onClick={() => setPlanoAberto(true)}
+          className="text-xs px-3 py-1.5 rounded-md border border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+        >
+          Inserir planejamento de produção
+        </button>
+      </div>
+
+      {schemaMissing && (
+        <div className="text-xs px-3 py-2 rounded-md border border-warning/40 bg-warning/10 text-warning">
+          {PLANO_SQL_HINT}
+        </div>
+      )}
 
       <div className="hud-panel p-4 overflow-x-auto">
         <table className="w-full text-sm">
@@ -55,16 +148,16 @@ function MES() {
               <th className="text-left font-medium py-2 px-2">OP</th>
               <th className="text-left font-medium py-2 px-2">SKU</th>
               <th className="text-left font-medium py-2 px-2">Linha</th>
-              <th className="text-left font-medium py-2 px-2">Início</th>
-              <th className="text-left font-medium py-2 px-2">Progresso</th>
+              <th className="text-left font-medium py-2 px-2">EA · Descargas/h</th>
+              <th className="text-left font-medium py-2 px-2">Progresso (UND)</th>
               <th className="text-left font-medium py-2 px-2">Status</th>
             </tr>
           </thead>
           <tbody>
-            {ORDERS.map((o) => {
+            {lista.map((o) => {
               const s = STATUS[o.status];
               const Icon = s.icon;
-              const pct = (o.done / o.qty) * 100;
+              const pct = o.qty > 0 ? (o.done / o.qty) * 100 : 0;
               return (
                 <tr key={o.id} className="border-t border-border hover:bg-muted/20">
                   <td className="py-2.5 px-2 mono text-foreground">{o.id}</td>

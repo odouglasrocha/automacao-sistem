@@ -19,6 +19,8 @@ import {
   usePlanoClear,
   semanaAtualISO,
   PLANO_SQL_HINT,
+  undDoPlano,
+  caixasDoMaterial,
   type PlanoImportRow,
   type PlanoRow,
 } from "@/hooks/usePlano";
@@ -175,7 +177,7 @@ export function PlanoDialog({
                   <th className="text-left font-medium py-2 px-2">Material</th>
                   <th className="text-right font-medium py-2 px-2">Cx/Fardos</th>
                   <th className="text-right font-medium py-2 px-2">Tons</th>
-                  <th className="text-left font-medium py-2 px-2">Linha</th>
+                  <th className="text-right font-medium py-2 px-2">UND</th>
                   <th className="text-right font-medium py-2 px-2">Ações</th>
                 </tr>
               </thead>
@@ -254,15 +256,21 @@ export function PlanoDialog({
                           fmt(r.tons)
                         )}
                       </td>
-                      <td className="py-2 px-2">
-                        {editando ? (
-                          <Input
-                            className="h-8"
-                            value={draft.linha ?? r.linha ?? ""}
-                            onChange={(e) => setDraft({ ...draft, linha: e.target.value })}
-                          />
+                      <td className="py-2 px-2 text-right mono tabular-nums">
+                        {caixasDoMaterial(r.cod_material_producao, r.material_producao) ? (
+                          <span title={`${fmt(r.plano_caixas_fardos)} × ${caixasDoMaterial(r.cod_material_producao, r.material_producao)} cx`}>
+                            {fmt(
+                              undDoPlano({
+                                ...r,
+                                plano_caixas_fardos:
+                                  editando && draft.plano_caixas_fardos !== undefined
+                                    ? draft.plano_caixas_fardos
+                                    : r.plano_caixas_fardos,
+                              }),
+                            )}
+                          </span>
                         ) : (
-                          (r.linha ?? "—")
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
                       <td className="py-2 px-2">
