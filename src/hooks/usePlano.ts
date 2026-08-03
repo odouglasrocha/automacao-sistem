@@ -35,6 +35,43 @@ const CAIXAS_POR_NOME = new Map<string, number>(
   materialsData.map((m) => [m.Material.trim().toUpperCase(), m.Caixas]),
 );
 
+/** Unidades (bolsas) por caixa/fardo — campo `Und` de materials.ts. */
+const UND_POR_COD = new Map<string, number>(materialsData.map((m) => [String(m.Codigo), m.Und]));
+const UND_POR_NOME = new Map<string, number>(
+  materialsData.map((m) => [m.Material.trim().toUpperCase(), m.Und]),
+);
+
+/** PPm (produção por minuto), indexado por código e por nome do material. */
+const PPM_POR_COD = new Map<string, number>(materialsData.map((m) => [String(m.Codigo), m.PPm]));
+const PPM_POR_NOME = new Map<string, number>(
+  materialsData.map((m) => [m.Material.trim().toUpperCase(), m.PPm]),
+);
+
+/** Horas totais disponíveis no dia (3 turnos). */
+export const HORAS_DIA = 24;
+
+/** Tempo fixo de setup (minutos) somado a cada demanda. */
+export const SETUP_MIN = 25;
+/** Tempo fixo de parada programada (minutos) somado a cada demanda. */
+export const PARADA_MIN = 60;
+/**
+ * Janela útil de produção por máquina usada no dimensionamento: cada EA deve
+ * concluir sua parte em, no máximo, 2 turnos (~16h), deixando folga dentro das
+ * 24h do dia para setup, parada e troca de turno.
+ */
+export const HORAS_LIMITE_MAQUINA = 16;
+/** Teto de máquinas por demanda. */
+export const MAX_MAQUINAS = 24;
+
+/** PPm de referência (data/materials.ts) para um item do plano. */
+export function ppmDoMaterial(cod: string, material?: string | null): number {
+  return (
+    PPM_POR_COD.get(String(cod ?? "").trim()) ??
+    PPM_POR_NOME.get(String(material ?? "").trim().toUpperCase()) ??
+    0
+  );
+}
+
 /** Caixas de referência (data/materials.ts) para um item do plano. */
 export function caixasDoMaterial(cod: string, material?: string | null): number {
   return (
@@ -44,9 +81,82 @@ export function caixasDoMaterial(cod: string, material?: string | null): number 
   );
 }
 
-/** UND planejadas = plano_caixas_fardos × Caixas (referência materials.ts). */
+/** Unidades por caixa/fardo (campo `Und` de materials.ts). */
+export function undPorCaixa(cod: string, material?: string | null): number {
+  return (
+    UND_POR_COD.get(String(cod ?? "").trim()) ??
+    UND_POR_NOME.get(String(material ?? "").trim().toUpperCase()) ??
+    0
+  );
+}
+
+/** UND planejadas = plano_caixas_fardos × Und (referência materials.ts). */
 export function undDoPlano(row: Pick<PlanoRow, "cod_material_producao" | "material_producao" | "plano_caixas_fardos">): number {
-  return (row.plano_caixas_fardos || 0) * caixasDoMaterial(row.cod_material_producao, row.material_producao);
+  return (row.plano_caixas_fardos || 0) * undPorCaixa(row.cod_material_producao, row.material_producao);
+}
+
+/**
+ * Tempo total da demanda em minutos (uma máquina):
+ *   (UND ÷ PPm) + setup + parada
+ */
+export function minutosDoPlano(
+  row: Pick<PlanoRow, "cod_material_producao" | "material_producao" | "plano_caixas_fardos">,
+): number {
+  const ppm = ppmDoMaterial(row.cod_material_producao, row.material_producao);
+  const und = undDoPlano(row);
+  if (!ppm || und <= 0) return 0;
+  return und / ppm + SETUP_MIN + PARADA_MIN;
+}
+
+/** Tempo total da demanda em horas (produção + setup + parada). */
+export function horasDoPlano(
+  row: Pick<PlanoRow, "cod_material_producao" | "material_producao" | "plano_caixas_fardos">,
+): number {
+  return minutosDoPlano(row) / 60;
+}
+
+/** Minutos apenas de produção (sem setup/parada). */
+export function minutosProducao(
+  row: Pick<PlanoRow, "cod_material_producao" | "material_producao" | "plano_caixas_fardos">,
+): number {
+  const ppm = ppmDoMaterial(row.cod_material_producao, row.material_producao);
+  const und = undDoPlano(row);
+  if (!ppm || und <= 0) return 0;
+  return und / ppm;
+}
+
+/**
+ * Qtd. de EAs sugerida: menor nº de máquinas cujo tempo por EA
+ * (produção ÷ n + setup + parada) caiba na janela útil de cada EA.
+ */
+export function eaNecessarias(
+  row: Pick<PlanoRow, "cod_material_producao" | "material_producao" | "plano_caixas_fardos">,
+): number {
+  const prod = minutosProducao(row);
+  if (prod <= 0) return 0;
+  for (let n = 1; n < MAX_MAQUINAS; n++) {
+    if ((prod / n + SETUP_MIN + PARADA_MIN) / 60 <= HORAS_LIMITE_MAQUINA) return n;
+  }
+  return MAX_MAQUINAS;
+}
+
+/**
+ * Tempo estimado por máquina, em horas:
+ *   (UND ÷ PPm ÷ nº máquinas) + setup + parada
+ */
+export function horasPorMaquinaPlano(
+  row: Pick<PlanoRow, "cod_material_producao" | "material_producao" | "plano_caixas_fardos">,
+  qtdMaquinas: number,
+): number {
+  const prod = minutosProducao(row);
+  if (prod <= 0) return 0;
+  const n = Math.max(1, qtdMaquinas);
+  return (prod / n + SETUP_MIN + PARADA_MIN) / 60;
+}
+
+/** Compatibilidade: tempo por máquina a partir do tempo total já calculado. */
+export function horasPorMaquina(horasTotais: number, qtdMaquinas: number): number {
+  return qtdMaquinas > 0 ? horasTotais / qtdMaquinas : horasTotais;
 }
 
 /** Itens do plano com data igual ao dia de hoje. */

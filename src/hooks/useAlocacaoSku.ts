@@ -3,12 +3,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { isSchemaMissing } from "@/hooks/useEaMachine";
-import { caixasDoMaterial } from "@/hooks/usePlano";
+import { undPorCaixa } from "@/hooks/usePlano";
 import { getCurrentDateInSaoPauloISO } from "@/data/ShelfLif";
 import type { Machine } from "@/lib/simulation";
 
 export const ALOCACAO_SQL_HINT =
   "Tabela `ea_alocacao_sku` ainda não criada — rode docs/sql/0006_alocacao_sku.sql no SQL Editor do Supabase.";
+
+/** Horas úteis de uma EA no dia (3 turnos). */
+export const HORAS_EA_DIA = 24;
 
 export interface AlocacaoSku {
   id: string;
@@ -19,6 +22,10 @@ export interface AlocacaoSku {
   /** Máquinas EA efetivamente reservadas para o SKU (ex.: ["EA34","EA35"]). */
   maquinas: string[];
   observacao: string | null;
+  /** Posição na fila da EA (1 = em produção, 2+ = agendado). */
+  ordem: number;
+  /** Horas estimadas de produção em CADA EA alocada. */
+  horas_estimadas: number;
 }
 
 /** Alocações de SKU × EA. Sem filtro = todas; por padrão o dia atual (fuso SP). */
@@ -38,7 +45,12 @@ export function useAlocacoes(dataPlano?: string) {
         throw error;
       }
       return {
-        rows: (data ?? []).map((r: any) => ({ ...r, maquinas: r.maquinas ?? [] })) as AlocacaoSku[],
+        rows: (data ?? []).map((r: any) => ({
+          ...r,
+          maquinas: r.maquinas ?? [],
+          ordem: Number(r.ordem ?? 1),
+          horas_estimadas: Number(r.horas_estimadas ?? 0),
+        })) as AlocacaoSku[],
         schemaMissing: false,
       };
     },
@@ -56,19 +68,53 @@ function handle(e: any, acao: string): never {
   throw new Error(e?.message ?? `Erro ao ${acao} alocação`);
 }
 
+/** Horas já comprometidas em cada EA no dia (ignorando a alocação em edição). */
+export function cargaPorMaquina(
+  rows: AlocacaoSku[],
+  ignorarId?: string,
+): Map<string, number> {
+  const carga = new Map<string, number>();
+  rows.forEach((a) => {
+    if (ignorarId && a.id === ignorarId) return;
+    a.maquinas.forEach((m) => {
+      const key = m.trim().toUpperCase();
+      carga.set(key, (carga.get(key) ?? 0) + (a.horas_estimadas || 0));
+    });
+  });
+  return carga;
+}
+
+/** Horas livres da EA dentro das 24h do dia. */
+export function horasLivres(carga: Map<string, number>, maquina: string): number {
+  return Math.max(0, HORAS_EA_DIA - (carga.get(maquina.trim().toUpperCase()) ?? 0));
+}
+
 /**
- * Reserva as próximas `qtd` máquinas EA livres (não usadas por outro SKU no
- * mesmo dia), preservando as que já pertencem à alocação atual.
+ * Reserva máquinas EA para `horasTotais`, preferindo as com maior margem livre
+ * no dia — uma EA já ocupada pode receber outro planejamento se o tempo couber.
  */
 export function reservarMaquinas(
   frota: string[],
-  ocupadas: Set<string>,
+  carga: Map<string, number>,
   atuais: string[],
-  qtd: number,
+  qtdMinima: number,
+  horasTotais: number,
 ): string[] {
-  const mantidas = atuais.filter((m) => frota.includes(m)).slice(0, qtd);
-  const livres = frota.filter((m) => !ocupadas.has(m) && !mantidas.includes(m));
-  return [...mantidas, ...livres.slice(0, Math.max(0, qtd - mantidas.length))];
+  const mantidas = atuais.filter((m) => frota.includes(m));
+  const candidatas = frota
+    .filter((m) => !mantidas.includes(m) && horasLivres(carga, m) > 0.05)
+    .sort((a, b) => horasLivres(carga, b) - horasLivres(carga, a));
+
+  const escolhidas = [...mantidas];
+  const cabe = () => {
+    if (!escolhidas.length) return false;
+    const porEa = horasTotais / escolhidas.length;
+    return escolhidas.every((m) => horasLivres(carga, m) + 1e-6 >= porEa);
+  };
+  while ((escolhidas.length < qtdMinima || !cabe()) && candidatas.length) {
+    escolhidas.push(candidatas.shift()!);
+  }
+  return escolhidas;
 }
 
 export function useAlocacaoSave() {
@@ -82,6 +128,8 @@ export function useAlocacaoSave() {
         qtd_ea: row.qtd_ea,
         maquinas: row.maquinas,
         observacao: row.observacao ?? null,
+        ordem: row.ordem ?? 1,
+        horas_estimadas: row.horas_estimadas ?? 0,
         updated_at: new Date().toISOString(),
       };
       const { error } = row.id
@@ -141,7 +189,7 @@ export function useProducaoPorSku(machines: Pick<Machine, "name" | "producedHour
     const skuPorMaquina = new Map<string, { cod: string; material: string }>();
 
     rows.forEach((a) => {
-      const fator = caixasDoMaterial(a.cod_material_producao, a.material_producao);
+      const fator = undPorCaixa(a.cod_material_producao, a.material_producao);
       let descargasHora = 0;
       let descargasAlvo = 0;
       a.maquinas.forEach((nome) => {
