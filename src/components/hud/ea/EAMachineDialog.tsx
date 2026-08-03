@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity, Cpu, Info, Network, Save, ShieldCheck, Tags, History, FlaskConical, Bell,
+  Activity, Cpu, Info, Network, Save, ShieldCheck, Tags, History, FlaskConical, Bell, HardDrive,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { CrudTable } from "@/components/hud/CrudTable";
 import { ModeloCombobox } from "@/components/hud/ea/ModeloCombobox";
+import { HardwareTab } from "@/components/hud/ea/HardwareTab";
 import {
   useEaLogs, useEaMaquinaSave, useEaSingleton, useEaSingletonSave, type EaMaquina,
 } from "@/hooks/useEaMachine";
@@ -67,6 +68,7 @@ function MachineTabs({ maquina }: { maquina: EaMaquina }) {
         <TabsTrigger value="info"><Info className="h-3.5 w-3.5 mr-1" />Informações</TabsTrigger>
         <TabsTrigger value="comm"><Network className="h-3.5 w-3.5 mr-1" />Comunicação</TabsTrigger>
         <TabsTrigger value="clp"><Cpu className="h-3.5 w-3.5 mr-1" />Controlador</TabsTrigger>
+        <TabsTrigger value="hw"><HardDrive className="h-3.5 w-3.5 mr-1" />Hardware Industrial</TabsTrigger>
         <TabsTrigger value="tags"><Tags className="h-3.5 w-3.5 mr-1" />Tags</TabsTrigger>
         <TabsTrigger value="rec"><FlaskConical className="h-3.5 w-3.5 mr-1" />Receitas</TabsTrigger>
         <TabsTrigger value="alm"><Bell className="h-3.5 w-3.5 mr-1" />Alarmes</TabsTrigger>
@@ -78,6 +80,7 @@ function MachineTabs({ maquina }: { maquina: EaMaquina }) {
       <TabsContent value="info"><InfoTab maquina={maquina} /></TabsContent>
       <TabsContent value="comm"><ComunicacaoTab maquina={maquina} /></TabsContent>
       <TabsContent value="clp"><ControladorTab maquina={maquina} /></TabsContent>
+      <TabsContent value="hw"><HardwareTab maquina={maquina} /></TabsContent>
       <TabsContent value="tags">
         <CrudTable
           table="ea_clp_tags"

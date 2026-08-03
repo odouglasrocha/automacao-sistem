@@ -40,14 +40,27 @@ export const AB_CATALOG_FALLBACK: ClpModelo[] = Object.entries(RAW).flatMap(
     modelos.map((modelo) => ({ fabricante: "Allen-Bradley", familia, modelo, ativo: true })),
 );
 
-export const PROTOCOLOS = ["EtherNet/IP", "OPC UA", "Modbus TCP", "MQTT"] as const;
+export const PROTOCOLOS = [
+  "EtherNet/IP",
+  "DF1",
+  "PCCC",
+  "Serial",
+  "OPC UA",
+  "Modbus TCP",
+  "MQTT",
+] as const;
 export type ProtocoloIndustrial = (typeof PROTOCOLOS)[number];
 
 export const PORTA_PADRAO: Record<ProtocoloIndustrial, number> = {
   "EtherNet/IP": 44818,
+  DF1: 0,
+  PCCC: 2222,
+  Serial: 0,
   "OPC UA": 4840,
   "Modbus TCP": 502,
   MQTT: 1883,
 };
 
-export const DATA_TYPES = ["BOOL", "INT", "DINT", "REAL", "STRING", "ARRAY", "STRUCT"] as const;
+export const DATA_TYPES = [
+  "BOOL", "INT", "DINT", "REAL", "FLOAT", "STRING", "ARRAY", "STRUCT",
+] as const;
