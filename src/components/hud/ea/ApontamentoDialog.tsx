@@ -71,7 +71,7 @@ export function ApontamentoDialog({
     setMaquina(inicial);
     setQuantidade("");
     setObservacao("");
-  }, [open, maquinaInicial, emProducao]);
+  }, [open]);
 
   const selecionada = emProducao.find((m) => m.nome === maquina) ?? null;
   const sku = selecionada?.sku ?? null;

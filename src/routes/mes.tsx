@@ -154,7 +154,7 @@ function MES() {
               <th className="text-left font-medium py-2 px-2">SKU</th>
               <th className="text-left font-medium py-2 px-2">Linha</th>
               <th className="text-left font-medium py-2 px-2">EA · Descargas/h</th>
-              <th className="text-left font-medium py-2 px-2">Progresso (UND)</th>
+              <th className="text-left font-medium py-2 px-2"></th>
               <th className="text-left font-medium py-2 px-2">Status</th>
             </tr>
           </thead>
