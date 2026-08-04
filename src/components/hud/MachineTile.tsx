@@ -1,4 +1,4 @@
-import { Thermometer, Zap, Gauge, Settings2, Radio, FlaskConical } from "lucide-react";
+import { Thermometer, Zap, Gauge, Settings2, Radio, FlaskConical, ClipboardCheck } from "lucide-react";
 import { STATUS_META, type Machine } from "@/lib/simulation";
 
 export function MachineTile({
@@ -6,12 +6,18 @@ export function MachineTile({
   onConfigure,
   modo = "simulacao",
   sku,
+  onApontar,
+  apontado = 0,
 }: {
   m: Machine;
   onConfigure?: (nome: string) => void;
   modo?: "producao" | "simulacao";
   /** SKU alocado a esta EA no plano do dia. */
   sku?: { cod: string; material: string } | null;
+  /** Abre o apontamento manual (somente EAs em modo Produção). */
+  onApontar?: (nome: string) => void;
+  /** UND já apontadas manualmente nesta EA hoje. */
+  apontado?: number;
 }) {
   const meta = STATUS_META[m.status];
   const progress = Math.min(100, (m.producedHour / m.target) * 100);
@@ -19,6 +25,17 @@ export function MachineTile({
 
   return (
     <div className={`hud-panel p-3 border ${meta.bg} relative overflow-hidden group`}>
+      {real && onApontar && (
+        <button
+          type="button"
+          onClick={() => onApontar(m.name)}
+          title={`Apontar produção em ${m.name}`}
+          aria-label={`Apontar produção em ${m.name}`}
+          className="absolute bottom-2 right-10 z-10 rounded-md border border-primary/40 bg-primary/10 p-1.5 text-primary opacity-0 transition hover:bg-primary/20 group-hover:opacity-100 focus:opacity-100"
+        >
+          <ClipboardCheck className="h-3.5 w-3.5" />
+        </button>
+      )}
       {onConfigure && (
         <button
           type="button"
@@ -108,6 +125,12 @@ export function MachineTile({
           title={`SKU alocado: ${sku.cod}-${sku.material}`}
         >
           SKU <span className="text-primary">{sku.cod}</span> · {sku.material}
+        </div>
+      )}
+
+      {real && apontado > 0 && (
+        <div className="mt-1 text-[10px] mono text-success">
+          Apontado hoje: {apontado.toLocaleString("pt-BR")} UND
         </div>
       )}
     </div>

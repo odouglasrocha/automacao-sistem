@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Factory, Cpu } from "lucide-react";
+import { Factory, Cpu, ClipboardCheck } from "lucide-react";
 import { ModulePage } from "@/components/hud/ModulePage";
 import { MachineTile } from "@/components/hud/MachineTile";
 import { useMachineConfig } from "@/components/hud/ea/useMachineConfig";
 import { AlocacaoSkuDialog } from "@/components/hud/ea/AlocacaoSkuDialog";
+import { ApontamentoDialog } from "@/components/hud/ea/ApontamentoDialog";
 import { useProducaoPorSku } from "@/hooks/useAlocacaoSku";
 import { useEaRuntime, applyRuntime } from "@/hooks/useEaRuntime";
 import { useIndustrialSimulation, STATUS_META, type MachineStatus } from "@/lib/simulation";
@@ -26,8 +27,16 @@ function ChaoDeFabrica() {
   const { abrir, dialog, conhece } = useMachineConfig();
   const emProducao = machines.filter((m) => m.modo === "producao").length;
   const [alocacaoAberta, setAlocacaoAberta] = useState(false);
-  const { skuPorMaquina, porSku } = useProducaoPorSku(machines);
+  const [apontamentoAberto, setApontamentoAberto] = useState(false);
+  const [maquinaApontada, setMaquinaApontada] = useState<string | null>(null);
+  const { skuPorMaquina, porSku, apontadoPorMaquina, apontadoTotal } =
+    useProducaoPorSku(machines);
   const undProduzidas = Array.from(porSku.values()).reduce((s, p) => s + p.und, 0);
+
+  const abrirApontamento = (nome?: string) => {
+    setMaquinaApontada(nome ?? null);
+    setApontamentoAberto(true);
+  };
 
   const counts = machines.reduce<Record<MachineStatus, number>>((acc, m) => {
     acc[m.status] = (acc[m.status] ?? 0) + 1;
@@ -64,7 +73,24 @@ function ChaoDeFabrica() {
           {porSku.size > 0
             ? `${porSku.size} SKU(s) alocado(s) · ${undProduzidas.toLocaleString("pt-BR")} UND/h em produção real`
             : "Nenhum SKU alocado às EAs para hoje"}
+          {apontadoTotal > 0 &&
+            ` · ${apontadoTotal.toLocaleString("pt-BR")} UND apontadas por operadores`}
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={() => abrirApontamento()}
+          disabled={emProducao === 0}
+          title={
+            emProducao === 0
+              ? "Apontamento disponível somente para EAs em modo Produção"
+              : "Apontamento manual por operador"
+          }
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-success/50 bg-success/10 text-success transition-colors hover:bg-success/20 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <ClipboardCheck className="h-3.5 w-3.5" />
+          Apontamento por operador
+        </button>
         <button
           type="button"
           onClick={() => setAlocacaoAberta(true)}
@@ -73,6 +99,7 @@ function ChaoDeFabrica() {
           <Cpu className="h-3.5 w-3.5" />
           Inserir SKU · quantidade de EA
         </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -83,6 +110,8 @@ function ChaoDeFabrica() {
             modo={m.modo}
             sku={skuPorMaquina.get(m.name.trim().toUpperCase()) ?? null}
             onConfigure={conhece(m.name) ? abrir : undefined}
+            onApontar={abrirApontamento}
+            apontado={apontadoPorMaquina.get(m.name.trim().toUpperCase()) ?? 0}
           />
         ))}
       </div>
@@ -91,6 +120,16 @@ function ChaoDeFabrica() {
         open={alocacaoAberta}
         onOpenChange={setAlocacaoAberta}
         frota={machines.map((m) => m.name)}
+      />
+      <ApontamentoDialog
+        open={apontamentoAberto}
+        onOpenChange={setApontamentoAberto}
+        maquinaInicial={maquinaApontada}
+        maquinas={machines.map((m) => ({
+          nome: m.name,
+          modo: m.modo,
+          sku: skuPorMaquina.get(m.name.trim().toUpperCase()) ?? null,
+        }))}
       />
     </ModulePage>
   );

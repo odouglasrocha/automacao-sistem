@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Activity,
+  ClipboardCheck,
   Gauge,
   Package,
   Percent,
@@ -13,6 +14,8 @@ import {
 import { KpiCard } from "@/components/hud/KpiCard";
 import { MachineTile } from "@/components/hud/MachineTile";
 import { useMachineConfig } from "@/components/hud/ea/useMachineConfig";
+import { ApontamentoDialog } from "@/components/hud/ea/ApontamentoDialog";
+import { useProducaoPorSku } from "@/hooks/useAlocacaoSku";
 import { useEaRuntime, applyRuntime } from "@/hooks/useEaRuntime";
 import { ProductionChart } from "@/components/hud/ProductionChart";
 import { AndonPanel } from "@/components/hud/AndonPanel";
@@ -46,6 +49,13 @@ function Dashboard() {
   const runtime = useEaRuntime();
   const machines = useMemo(() => applyRuntime(simuladas, runtime), [simuladas, runtime]);
   const { abrir, dialog, conhece } = useMachineConfig();
+  const { skuPorMaquina, apontadoPorMaquina, apontadoTotal } = useProducaoPorSku(machines);
+  const [apontamentoAberto, setApontamentoAberto] = useState(false);
+  const [maquinaApontada, setMaquinaApontada] = useState<string | null>(null);
+  const abrirApontamento = (nome?: string) => {
+    setMaquinaApontada(nome ?? null);
+    setApontamentoAberto(true);
+  };
 
   const kpis = useMemo(() => {
     const producing = machines.filter((m) => m.status === "producing").length;
@@ -150,17 +160,46 @@ function Dashboard() {
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <Users className="h-4 w-4" />
-                  <span className="mono">42 operadores online</span>
+                  <span className="mono">
+                    {apontadoTotal.toLocaleString("pt-BR")} UND apontadas hoje
+                  </span>
                   <Target className="h-4 w-4 ml-2" />
-                  <span className="mono">Turno B · 14:00–22:00</span>
+                  <span className="mono">{kpis.emProducao} em Produção</span>
+                  <button
+                    type="button"
+                    onClick={() => abrirApontamento()}
+                    disabled={kpis.emProducao === 0}
+                    className="ml-2 inline-flex items-center gap-1.5 rounded-md border border-success/50 bg-success/10 px-2 py-1 text-success transition-colors hover:bg-success/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ClipboardCheck className="h-3.5 w-3.5" />
+                    Apontar
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {machines.map((m) => (
-                  <MachineTile key={m.id} m={m} modo={m.modo} onConfigure={conhece(m.name) ? abrir : undefined} />
+                  <MachineTile
+                    key={m.id}
+                    m={m}
+                    modo={m.modo}
+                    sku={skuPorMaquina.get(m.name.trim().toUpperCase()) ?? null}
+                    onConfigure={conhece(m.name) ? abrir : undefined}
+                    onApontar={abrirApontamento}
+                    apontado={apontadoPorMaquina.get(m.name.trim().toUpperCase()) ?? 0}
+                  />
                 ))}
               </div>
               {dialog}
+              <ApontamentoDialog
+                open={apontamentoAberto}
+                onOpenChange={setApontamentoAberto}
+                maquinaInicial={maquinaApontada}
+                maquinas={machines.map((m) => ({
+                  nome: m.name,
+                  modo: m.modo,
+                  sku: skuPorMaquina.get(m.name.trim().toUpperCase()) ?? null,
+                }))}
+              />
             </div>
             <AlarmList alarms={alarms} />
           </section>

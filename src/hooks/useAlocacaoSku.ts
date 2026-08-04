@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { isSchemaMissing } from "@/hooks/useEaMachine";
 import { undPorCaixa } from "@/hooks/usePlano";
+import { useApontamentoTotais } from "@/hooks/useApontamento";
 import { getCurrentDateInSaoPauloISO } from "@/data/ShelfLif";
 import type { Machine } from "@/lib/simulation";
 
@@ -173,6 +174,8 @@ export interface ProducaoSku {
   /** Progresso em UND = descargas × caixas do material (referência materials.ts). */
   und: number;
   undAlvo: number;
+  /** UND apontadas manualmente pelos operadores (modo Produção). */
+  undApontado: number;
 }
 
 /**
@@ -182,6 +185,8 @@ export interface ProducaoSku {
  */
 export function useProducaoPorSku(machines: Pick<Machine, "name" | "producedHour" | "target">[]) {
   const { rows, schemaMissing, dia } = useAlocacoes();
+  const { porSku: apontadoPorSku, porMaquina: apontadoPorMaquina, total: apontadoTotal } =
+    useApontamentoTotais();
 
   return useMemo(() => {
     const porNome = new Map(machines.map((m) => [m.name.trim().toUpperCase(), m]));
@@ -206,11 +211,20 @@ export function useProducaoPorSku(machines: Pick<Machine, "name" | "producedHour
         maquinas: a.maquinas,
         descargasHora,
         descargasAlvo,
-        und: Math.round(descargasHora * fator),
+        und: Math.round(descargasHora * fator) + (apontadoPorSku.get(a.cod_material_producao) ?? 0),
         undAlvo: Math.round(descargasAlvo * fator),
+        undApontado: apontadoPorSku.get(a.cod_material_producao) ?? 0,
       });
     });
 
-    return { porSku, skuPorMaquina, alocacoes: rows, schemaMissing, dia };
-  }, [machines, rows, schemaMissing, dia]);
+    return {
+      porSku,
+      skuPorMaquina,
+      alocacoes: rows,
+      schemaMissing,
+      dia,
+      apontadoPorMaquina,
+      apontadoTotal,
+    };
+  }, [machines, rows, schemaMissing, dia, apontadoPorSku, apontadoPorMaquina, apontadoTotal]);
 }

@@ -4,6 +4,7 @@ import { ModulePage, ComingSoon } from "@/components/hud/ModulePage";
 import { KpiCard } from "@/components/hud/KpiCard";
 import { useMemo, useState } from "react";
 import { PlanoDialog } from "@/components/hud/PlanoDialog";
+import { ApontamentoDialog } from "@/components/hud/ea/ApontamentoDialog";
 import { usePlanoHoje, undDoPlano, PLANO_SQL_HINT } from "@/hooks/usePlano";
 import { getShelfLifeExpirationDate } from "@/data/ShelfLif";
 import { CodigoJuliano } from "@/data/CodigoJuliano";
@@ -27,6 +28,7 @@ function linhaDoMaterial(material: string, fallback?: string | null): string {
 }
 
 const PLANEJAMENTO = "Inserir planejamento de produção";
+const APONTAMENTO = "Apontamento por operador";
 
 export const Route = createFileRoute("/mes")({
   head: () => ({
@@ -55,6 +57,7 @@ const STATUS: Record<string, { label: string; cls: string; icon: typeof Play }> 
 
 function MES() {
   const [planoAberto, setPlanoAberto] = useState(false);
+  const [apontamentoAberto, setApontamentoAberto] = useState(false);
   const { rows: planoHoje, isLoading: carregandoPlano, schemaMissing, hoje } = usePlanoHoje();
   const validadeSemana = getShelfLifeExpirationDate(hoje);
   const juliano = julianoDoDia(hoje);
@@ -63,7 +66,7 @@ function MES() {
   const { machines: simuladas } = useIndustrialSimulation();
   const runtime = useEaRuntime();
   const machines = applyRuntime(simuladas, runtime);
-  const { porSku } = useProducaoPorSku(machines);
+  const { porSku, skuPorMaquina, apontadoTotal } = useProducaoPorSku(machines);
 
   // Ordens derivadas do planejamento do dia (plano × Caixas = UND planejadas).
   const ordensPlano = useMemo(
@@ -125,6 +128,8 @@ function MES() {
             : carregandoPlano
               ? "Carregando planejamento…"
               : "Sem planejamento para hoje · exibindo ordens de exemplo"}
+          {apontadoTotal > 0 &&
+            ` · ${apontadoTotal.toLocaleString("pt-BR")} UND apontadas por operadores`}
         </div>
         <button
           type="button"
@@ -190,7 +195,7 @@ function MES() {
       <ComingSoon
         items={[
           "Sequenciamento inteligente (PCP)",
-          "Apontamento por operador",
+          APONTAMENTO,
           "Rastreabilidade por lote/serial",
           PLANEJAMENTO,
           "Integração ERP/SAP",
@@ -198,10 +203,20 @@ function MES() {
         ]}
         onSelect={(item) => {
           if (item === PLANEJAMENTO) setPlanoAberto(true);
+          if (item === APONTAMENTO) setApontamentoAberto(true);
         }}
       />
 
       <PlanoDialog open={planoAberto} onOpenChange={setPlanoAberto} />
+      <ApontamentoDialog
+        open={apontamentoAberto}
+        onOpenChange={setApontamentoAberto}
+        maquinas={machines.map((m) => ({
+          nome: m.name,
+          modo: m.modo,
+          sku: skuPorMaquina.get(m.name.trim().toUpperCase()) ?? null,
+        }))}
+      />
     </ModulePage>
   );
 }
