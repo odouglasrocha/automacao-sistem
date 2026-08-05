@@ -8,6 +8,7 @@ export function MachineTile({
   sku,
   onApontar,
   apontado = 0,
+  metaUnd = 0,
 }: {
   m: Machine;
   onConfigure?: (nome: string) => void;
@@ -18,10 +19,17 @@ export function MachineTile({
   onApontar?: (nome: string) => void;
   /** UND já apontadas manualmente nesta EA hoje. */
   apontado?: number;
+  /** Meta em UND do planejamento de hoje para o SKU alocado nesta EA. */
+  metaUnd?: number;
 }) {
   const meta = STATUS_META[m.status];
-  const progress = Math.min(100, (m.producedHour / m.target) * 100);
   const real = modo === "producao";
+  // Em modo Produção o indicador passa a ser o apontamento do operador contra a
+  // meta (UND) do planejamento de hoje para o SKU alocado à EA.
+  const usaApontamento = real && metaUnd > 0;
+  const atual = usaApontamento ? apontado : m.producedHour;
+  const alvo = usaApontamento ? metaUnd : m.target;
+  const progress = alvo > 0 ? Math.min(100, (atual / alvo) * 100) : 0;
 
   return (
     <div className={`hud-panel p-3 border ${meta.bg} relative overflow-hidden group`}>
@@ -110,9 +118,11 @@ export function MachineTile({
       </div>
 
       <div className="mt-2 flex items-center justify-between text-[11px] mono">
-        <span className="text-muted-foreground">Descargas/h (produção real)</span>
+        <span className="text-muted-foreground">
+          {usaApontamento ? "Progresso (UND) · apontado/meta" : "Descargas/h (produção real)"}
+        </span>
         <span className="text-foreground tabular-nums">
-          {m.producedHour}/{m.target}
+          {atual.toLocaleString("pt-BR")}/{alvo.toLocaleString("pt-BR")}
         </span>
       </div>
       <div className="h-1 mt-1 rounded-full bg-background/60 overflow-hidden">
@@ -128,7 +138,7 @@ export function MachineTile({
         </div>
       )}
 
-      {real && apontado > 0 && (
+      {real && apontado > 0 && !usaApontamento && (
         <div className="mt-1 text-[10px] mono text-success">
           Apontado hoje: {apontado.toLocaleString("pt-BR")} UND
         </div>

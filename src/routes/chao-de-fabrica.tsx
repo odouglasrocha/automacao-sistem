@@ -29,7 +29,7 @@ function ChaoDeFabrica() {
   const [alocacaoAberta, setAlocacaoAberta] = useState(false);
   const [apontamentoAberto, setApontamentoAberto] = useState(false);
   const [maquinaApontada, setMaquinaApontada] = useState<string | null>(null);
-  const { skuPorMaquina, porSku, apontadoPorMaquina, apontadoTotal } =
+  const { skuPorMaquina, porSku, apontadoPorMaquina, apontadoTotal, metaPorMaquina } =
     useProducaoPorSku(machines);
   const undProduzidas = Array.from(porSku.values()).reduce((s, p) => s + p.und, 0);
 
@@ -112,6 +112,7 @@ function ChaoDeFabrica() {
             onConfigure={conhece(m.name) ? abrir : undefined}
             onApontar={abrirApontamento}
             apontado={apontadoPorMaquina.get(m.name.trim().toUpperCase()) ?? 0}
+            metaUnd={metaPorMaquina.get(m.name.trim().toUpperCase()) ?? 0}
           />
         ))}
       </div>

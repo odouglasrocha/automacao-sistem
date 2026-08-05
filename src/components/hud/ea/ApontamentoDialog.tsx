@@ -62,16 +62,32 @@ export function ApontamentoDialog({
   const [observacao, setObservacao] = useState("");
   const [matriculaManual, setMatriculaManual] = useState("");
 
+  // Chave estável das EAs em produção: o array `maquinas` é recriado a cada
+  // render (simulação em tempo real) e reexecutaria o efeito, apagando o que
+  // o operador está digitando.
+  const chaveEmProducao = emProducao.map((m) => m.nome).join("|");
+
   useEffect(() => {
     if (!open) return;
-    const inicial =
-      maquinaInicial && emProducao.some((m) => m.nome === maquinaInicial)
+    const nomes = chaveEmProducao ? chaveEmProducao.split("|") : [];
+    setMaquina(
+      maquinaInicial && nomes.includes(maquinaInicial)
         ? maquinaInicial
-        : (emProducao[0]?.nome ?? "");
-    setMaquina(inicial);
+        : (nomes[0] ?? ""),
+    );
     setQuantidade("");
     setObservacao("");
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, maquinaInicial]);
+
+  // Se a EA selecionada sumir da lista (mudou de modo), reposiciona sem
+  // limpar os campos digitados.
+  useEffect(() => {
+    if (!open) return;
+    const nomes = chaveEmProducao ? chaveEmProducao.split("|") : [];
+    if (maquina && nomes.includes(maquina)) return;
+    setMaquina(nomes[0] ?? "");
+  }, [open, chaveEmProducao, maquina]);
 
   const selecionada = emProducao.find((m) => m.nome === maquina) ?? null;
   const sku = selecionada?.sku ?? null;

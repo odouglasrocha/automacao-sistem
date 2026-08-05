@@ -9,79 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as ChaoDeFabricaRouteImport } from './routes/chao-de-fabrica'
-import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
-import { Route as EnergiaRouteImport } from './routes/energia'
-import { Route as IaRouteImport } from './routes/ia'
-import { Route as IiotRouteImport } from './routes/iiot'
-import { Route as ManutencaoRouteImport } from './routes/manutencao'
-import { Route as MesRouteImport } from './routes/mes'
-import { Route as QualidadeRouteImport } from './routes/qualidade'
-import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as ScadaRouteImport } from './routes/scada'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
+import { Route as QualidadeRouteImport } from './routes/qualidade'
+import { Route as MesRouteImport } from './routes/mes'
+import { Route as ManutencaoRouteImport } from './routes/manutencao'
+import { Route as IiotRouteImport } from './routes/iiot'
+import { Route as IaRouteImport } from './routes/ia'
+import { Route as EnergiaRouteImport } from './routes/energia'
+import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
+import { Route as ChaoDeFabricaRouteImport } from './routes/chao-de-fabrica'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as IndexRouteImport } from './routes/index'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AlmoxarifadoRoute = AlmoxarifadoRouteImport.update({
-  id: '/almoxarifado',
-  path: '/almoxarifado',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChaoDeFabricaRoute = ChaoDeFabricaRouteImport.update({
-  id: '/chao-de-fabrica',
-  path: '/chao-de-fabrica',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EnergiaRoute = EnergiaRouteImport.update({
-  id: '/energia',
-  path: '/energia',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IaRoute = IaRouteImport.update({
-  id: '/ia',
-  path: '/ia',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IiotRoute = IiotRouteImport.update({
-  id: '/iiot',
-  path: '/iiot',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ManutencaoRoute = ManutencaoRouteImport.update({
-  id: '/manutencao',
-  path: '/manutencao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MesRoute = MesRouteImport.update({
-  id: '/mes',
-  path: '/mes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QualidadeRoute = QualidadeRouteImport.update({
-  id: '/qualidade',
-  path: '/qualidade',
+const ScadaRoute = ScadaRouteImport.update({
+  id: '/scada',
+  path: '/scada',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RelatoriosRoute = RelatoriosRouteImport.update({
@@ -89,9 +34,64 @@ const RelatoriosRoute = RelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ScadaRoute = ScadaRouteImport.update({
-  id: '/scada',
-  path: '/scada',
+const QualidadeRoute = QualidadeRouteImport.update({
+  id: '/qualidade',
+  path: '/qualidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesRoute = MesRouteImport.update({
+  id: '/mes',
+  path: '/mes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManutencaoRoute = ManutencaoRouteImport.update({
+  id: '/manutencao',
+  path: '/manutencao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IiotRoute = IiotRouteImport.update({
+  id: '/iiot',
+  path: '/iiot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IaRoute = IaRouteImport.update({
+  id: '/ia',
+  path: '/ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnergiaRoute = EnergiaRouteImport.update({
+  id: '/energia',
+  path: '/energia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChaoDeFabricaRoute = ChaoDeFabricaRouteImport.update({
+  id: '/chao-de-fabrica',
+  path: '/chao-de-fabrica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlmoxarifadoRoute = AlmoxarifadoRouteImport.update({
+  id: '/almoxarifado',
+  path: '/almoxarifado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -214,88 +214,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/almoxarifado': {
-      id: '/almoxarifado'
-      path: '/almoxarifado'
-      fullPath: '/almoxarifado'
-      preLoaderRoute: typeof AlmoxarifadoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chao-de-fabrica': {
-      id: '/chao-de-fabrica'
-      path: '/chao-de-fabrica'
-      fullPath: '/chao-de-fabrica'
-      preLoaderRoute: typeof ChaoDeFabricaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/configuracoes': {
-      id: '/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof ConfiguracoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/energia': {
-      id: '/energia'
-      path: '/energia'
-      fullPath: '/energia'
-      preLoaderRoute: typeof EnergiaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ia': {
-      id: '/ia'
-      path: '/ia'
-      fullPath: '/ia'
-      preLoaderRoute: typeof IaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/iiot': {
-      id: '/iiot'
-      path: '/iiot'
-      fullPath: '/iiot'
-      preLoaderRoute: typeof IiotRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/manutencao': {
-      id: '/manutencao'
-      path: '/manutencao'
-      fullPath: '/manutencao'
-      preLoaderRoute: typeof ManutencaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mes': {
-      id: '/mes'
-      path: '/mes'
-      fullPath: '/mes'
-      preLoaderRoute: typeof MesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/qualidade': {
-      id: '/qualidade'
-      path: '/qualidade'
-      fullPath: '/qualidade'
-      preLoaderRoute: typeof QualidadeRouteImport
+    '/scada': {
+      id: '/scada'
+      path: '/scada'
+      fullPath: '/scada'
+      preLoaderRoute: typeof ScadaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/relatorios': {
@@ -305,11 +228,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/scada': {
-      id: '/scada'
-      path: '/scada'
-      fullPath: '/scada'
-      preLoaderRoute: typeof ScadaRouteImport
+    '/qualidade': {
+      id: '/qualidade'
+      path: '/qualidade'
+      fullPath: '/qualidade'
+      preLoaderRoute: typeof QualidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mes': {
+      id: '/mes'
+      path: '/mes'
+      fullPath: '/mes'
+      preLoaderRoute: typeof MesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manutencao': {
+      id: '/manutencao'
+      path: '/manutencao'
+      fullPath: '/manutencao'
+      preLoaderRoute: typeof ManutencaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/iiot': {
+      id: '/iiot'
+      path: '/iiot'
+      fullPath: '/iiot'
+      preLoaderRoute: typeof IiotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ia': {
+      id: '/ia'
+      path: '/ia'
+      fullPath: '/ia'
+      preLoaderRoute: typeof IaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/energia': {
+      id: '/energia'
+      path: '/energia'
+      fullPath: '/energia'
+      preLoaderRoute: typeof EnergiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracoes': {
+      id: '/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ConfiguracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chao-de-fabrica': {
+      id: '/chao-de-fabrica'
+      path: '/chao-de-fabrica'
+      fullPath: '/chao-de-fabrica'
+      preLoaderRoute: typeof ChaoDeFabricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/almoxarifado': {
+      id: '/almoxarifado'
+      path: '/almoxarifado'
+      fullPath: '/almoxarifado'
+      preLoaderRoute: typeof AlmoxarifadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -334,13 +334,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

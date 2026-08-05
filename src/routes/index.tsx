@@ -49,7 +49,8 @@ function Dashboard() {
   const runtime = useEaRuntime();
   const machines = useMemo(() => applyRuntime(simuladas, runtime), [simuladas, runtime]);
   const { abrir, dialog, conhece } = useMachineConfig();
-  const { skuPorMaquina, apontadoPorMaquina, apontadoTotal } = useProducaoPorSku(machines);
+  const { skuPorMaquina, apontadoPorMaquina, apontadoTotal, metaPorMaquina } =
+    useProducaoPorSku(machines);
   const [apontamentoAberto, setApontamentoAberto] = useState(false);
   const [maquinaApontada, setMaquinaApontada] = useState<string | null>(null);
   const abrirApontamento = (nome?: string) => {
@@ -186,6 +187,7 @@ function Dashboard() {
                     onConfigure={conhece(m.name) ? abrir : undefined}
                     onApontar={abrirApontamento}
                     apontado={apontadoPorMaquina.get(m.name.trim().toUpperCase()) ?? 0}
+                    metaUnd={metaPorMaquina.get(m.name.trim().toUpperCase()) ?? 0}
                   />
                 ))}
               </div>
