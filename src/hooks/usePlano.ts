@@ -47,6 +47,54 @@ const PPM_POR_NOME = new Map<string, number>(
   materialsData.map((m) => [m.Material.trim().toUpperCase(), m.PPm]),
 );
 
+/** Gramagem (kg por unidade), indexada por código e por nome do material. */
+function parseGramagem(v: string | number): number {
+  return Number(String(v ?? "").replace(",", ".")) || 0;
+}
+const GRAMAGEM_POR_COD = new Map<string, number>(
+  materialsData.map((m) => [String(m.Codigo), parseGramagem(m.Gramagem)]),
+);
+const GRAMAGEM_POR_NOME = new Map<string, number>(
+  materialsData.map((m) => [m.Material.trim().toUpperCase(), parseGramagem(m.Gramagem)]),
+);
+
+/** Gramagem de referência (kg por unidade) — campo `Gramagem` de materials.ts. */
+export function gramagemDoMaterial(cod: string, material?: string | null): number {
+  return (
+    GRAMAGEM_POR_COD.get(String(cod ?? "").trim()) ??
+    GRAMAGEM_POR_NOME.get(String(material ?? "").trim().toUpperCase()) ??
+    0
+  );
+}
+
+/**
+ * Toneladas a partir de UND já convertidas:
+ *   UND × Gramagem (kg) ÷ 1000
+ * Ex.: 30.000 × 0,100 kg = 3.000 kg = 3,00 t
+ */
+export function toneladasDeUnd(und: number, cod: string, material?: string | null): number {
+  const g = gramagemDoMaterial(cod, material);
+  if (!g || und <= 0) return 0;
+  return (und * g) / 1000;
+}
+
+/**
+ * Pallets a partir de UND já convertidas:
+ *   (UND ÷ Und) ÷ Caixas, arredondado para cima (pallet fechado)
+ * Ex.: 30.000 ÷ 27 = 1.111,11 caixas ÷ 49 = 23 pallets
+ */
+export function palletsDeUnd(und: number, cod: string, material?: string | null): number {
+  const porCaixa = undPorCaixa(cod, material);
+  const caixasPorPallet = caixasDoMaterial(cod, material);
+  if (!porCaixa || !caixasPorPallet || und <= 0) return 0;
+  // Caixas inteiras (fração residual de caixa não forma pallet).
+  const caixas = Math.floor(und / porCaixa + 1e-6);
+  if (caixas <= 0) return 0;
+  // Epsilon evita que ruído de ponto flutuante empurre o arredondamento
+  // para um pallet a mais (ex.: 36,0000001 → 37).
+  return Math.ceil(caixas / caixasPorPallet - 1e-6);
+}
+
 /** Horas totais disponíveis no dia (3 turnos). */
 export const HORAS_DIA = 24;
 

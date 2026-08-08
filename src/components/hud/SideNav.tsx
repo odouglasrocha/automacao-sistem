@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Building2,
   LogOut,
+  ChevronsLeft,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthProvider";
@@ -42,17 +43,27 @@ export const NAV_ITEMS: NavItem[] = [
 export function SideNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, signOut } = useAuth();
-  const { sidebarOpen } = useUi();
+  const { sidebarOpen, setSidebarOpen } = useUi();
   const { operador } = useOperador();
 
   if (!sidebarOpen) return null;
 
   return (
     <aside className="hidden lg:flex w-56 2xl:w-64 flex-col shrink-0 border-r border-border bg-sidebar/60 backdrop-blur-sm">
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border flex items-center justify-between gap-2">
         <div className="text-[10px] mono uppercase tracking-[0.24em] text-muted-foreground">
           Módulos ICS
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          onClick={() => setSidebarOpen(false)}
+          title="Ocultar menu (F2)"
+          aria-label="Ocultar menu lateral"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
       </div>
       <nav className="flex-1 overflow-y-auto py-2">
         {NAV_ITEMS.map((item) => {

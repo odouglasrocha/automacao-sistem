@@ -5,7 +5,13 @@ import { KpiCard } from "@/components/hud/KpiCard";
 import { useMemo, useState } from "react";
 import { PlanoDialog } from "@/components/hud/PlanoDialog";
 import { ApontamentoDialog } from "@/components/hud/ea/ApontamentoDialog";
-import { usePlanoHoje, undDoPlano, PLANO_SQL_HINT } from "@/hooks/usePlano";
+import {
+  usePlanoHoje,
+  undDoPlano,
+  toneladasDeUnd,
+  palletsDeUnd,
+  PLANO_SQL_HINT,
+} from "@/hooks/usePlano";
 import { getShelfLifeExpirationDate } from "@/data/ShelfLif";
 import { CodigoJuliano } from "@/data/CodigoJuliano";
 import { useIndustrialSimulation } from "@/lib/simulation";
@@ -80,6 +86,7 @@ function MES() {
           id: `${new Date(`${validadeSemana}T00:00:00`).toLocaleDateString("pt-BR")} · ${juliano}`,
           sku: `${p.cod_material_producao}-${p.material_producao}`,
           material: p.material_producao,
+          cod: p.cod_material_producao,
           qty,
           done,
           status,
@@ -92,7 +99,7 @@ function MES() {
   const usandoPlano = ordensPlano.length > 0;
   const lista = usandoPlano
     ? ordensPlano
-    : ORDERS.map((o) => ({ ...o, material: o.sku, line: o.line }));
+    : ORDERS.map((o) => ({ ...o, material: o.sku, cod: "", line: o.line }));
   const undTotal = ordensPlano.reduce((s, o) => s + o.qty, 0);
 
   return (
@@ -147,14 +154,16 @@ function MES() {
       )}
 
       <div className="hud-panel p-4 overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[11px] sm:text-xs md:text-sm 2xl:text-base">
           <thead>
-            <tr className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            <tr className="text-[9px] sm:text-[10px] 2xl:text-xs uppercase tracking-widest text-muted-foreground">
               <th className="text-left font-medium py-2 px-2">OP</th>
               <th className="text-left font-medium py-2 px-2">SKU</th>
               <th className="text-left font-medium py-2 px-2">Linha</th>
               <th className="text-left font-medium py-2 px-2">EA · Descargas/h</th>
               <th className="text-left font-medium py-2 px-2">Progresso (UND)</th>
+              <th className="text-right font-medium py-2 px-2">Toneladas</th>
+              <th className="text-right font-medium py-2 px-2">Pallets</th>
               <th className="text-left font-medium py-2 px-2">Status</th>
             </tr>
           </thead>
@@ -163,23 +172,39 @@ function MES() {
               const s = STATUS[o.status];
               const Icon = s.icon;
               const pct = o.qty > 0 ? (o.done / o.qty) * 100 : 0;
+              // Base de cálculo: produção real quando houver apontamento,
+              // senão o planejado (meta) — assim os valores sempre aparecem.
+              const baseUnd = o.done > 0 ? o.done : o.qty;
+              const tons = toneladasDeUnd(baseUnd, o.cod, o.material);
+              const pallets = palletsDeUnd(baseUnd, o.cod, o.material);
               return (
                 <tr key={o.id} className="border-t border-border hover:bg-muted/20">
-                  <td className="py-2.5 px-2 mono text-foreground">{o.id}</td>
-                  <td className="py-2.5 px-2 mono text-muted-foreground">{o.sku}</td>
-                  <td className="py-2.5 px-2">{o.line}</td>
-                  <td className="py-2.5 px-2 mono text-muted-foreground">{o.start}</td>
-                  <td className="py-2.5 px-2 min-w-[180px]">
+                  <td className="py-2 px-1.5 sm:py-2.5 sm:px-2 mono text-foreground">{o.id}</td>
+                  <td className="py-2 px-1.5 sm:py-2.5 sm:px-2 mono text-muted-foreground">{o.sku}</td>
+                  <td className="py-2 px-1.5 sm:py-2.5 sm:px-2">{o.line}</td>
+                  <td className="py-2 px-1.5 sm:py-2.5 sm:px-2 mono text-muted-foreground">{o.start}</td>
+                  <td className="py-2 px-1.5 sm:py-2.5 sm:px-2 min-w-[180px]">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 rounded-full bg-background/60 overflow-hidden">
                         <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
                       </div>
-                      <span className="mono text-xs text-muted-foreground tabular-nums w-24 text-right">
+                      <span className="mono text-[10px] sm:text-xs 2xl:text-sm text-muted-foreground tabular-nums w-20 sm:w-24 2xl:w-28 text-right">
                         {o.done.toLocaleString("pt-BR")}/{o.qty.toLocaleString("pt-BR")}
                       </span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-2">
+                  <td className="py-2 px-1.5 sm:py-2.5 sm:px-2 text-right mono tabular-nums">
+                    {tons > 0
+                      ? tons.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
+                      : "—"}
+                  </td>
+                  <td className="py-2 px-1.5 sm:py-2.5 sm:px-2 text-right mono tabular-nums">
+                    {pallets > 0 ? pallets.toLocaleString("pt-BR") : "—"}
+                  </td>
+                  <td className="py-2 px-1.5 sm:py-2.5 sm:px-2">
                     <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-sm border ${s.cls}`}>
                       <Icon className="h-3 w-3" />
                       {s.label}
